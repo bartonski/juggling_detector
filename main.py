@@ -21,8 +21,6 @@ print( f"size: {width}x{height}");
 ret, frame = cap.read()
 
 centers = []
-centerhit = {}
-maxcenterhit = 0
 
 while ret and current_frame <= frames:
     mask = object_detector.apply(frame)
@@ -34,24 +32,15 @@ while ret and current_frame <= frames:
             M = cv2.moments(cnt)
             current = [int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"])]
             centers.append( current )
-            centerkey=f"{current[0]},{current[1]}"
-            if centerkey not in centerhit:
-                centerhit[centerkey] = 0
-            centerhit[centerkey] += 64
-            if centerhit[centerkey] > maxcenterhit:
-                maxcenterhit = centerhit[centerkey]
             #cX = int(M["m10"] / M["m00"])
             #cY = int(M["m01"] / M["m00"])
             cv2.drawContours(frame, [cnt], -1, (0, 255, 0), 2)
             for center in centers:
-                centerkey=f"{center[0]},{center[1]}"
-                red   = centerhit[centerkey] & 0x0000FF
-                green = centerhit[centerkey] & 0x00FF00
-                blue  = centerhit[centerkey] & 0xFF0000
-                color = ( blue, green, red )
+                red   = 0xFF
+                color = ( 0, 0, red )
                 cv2.circle(frame, (center[0], center[1]), 2, color, -1)
             cv2.drawContours(frame, [cnt], -1, (0, 255, 0), 2)
-    print( f"current frame: {current_frame}, maxcenterhit: {maxcenterhit}")
+    print( f"current frame: {current_frame}")
 
     cv2.namedWindow("Frame")        # Create a named window
     cv2.moveWindow("Frame", 40,30)  # Move it to (40,30)
