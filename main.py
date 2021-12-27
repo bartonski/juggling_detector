@@ -1,6 +1,7 @@
 import cv2
 import os
 import sys
+import re
 
 filename = str(sys.argv[1])
 frames = int(sys.argv[2])
@@ -9,12 +10,23 @@ if frames is None:
 current_frame = 0
 
 cap = cv2.VideoCapture(filename)
+r = re.compile('\.[^.]+$')
+basename = r.sub( '', filename )
+#basename
 
 # Object detection from stable camera
 object_detector = cv2.createBackgroundSubtractorMOG2(history=100, varThreshold=40)
 
-width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+width      = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+height     = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+frame_rate = int(cap.get(cv2.CAP_PROP_FPS))
+
+out = cv2.VideoWriter(
+        'juggling_detection.mp4',
+        cv2.VideoWriter_fourcc('M','J','P','G'),
+        frame_rate/2,
+        (width, height)
+      )
 
 print( f"size: {width}x{height}");
 
@@ -41,6 +53,7 @@ while ret and current_frame <= frames:
                 cv2.circle(frame, (center[0], center[1]), 2, color, -1)
             cv2.drawContours(frame, [cnt], -1, (0, 255, 0), 2)
     print( f"current frame: {current_frame}")
+    out.write(frame)
 
     cv2.namedWindow("Frame")        # Create a named window
     cv2.moveWindow("Frame", 40,30)  # Move it to (40,30)
@@ -55,4 +68,5 @@ while ret and current_frame <= frames:
     current_frame += 1
 
 cap.release()
+out.release()
 #cv2.destroyAllWindows()
