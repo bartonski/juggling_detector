@@ -3,7 +3,7 @@
 An object detection program to show trails of hands and juggling balls while
 juggling.
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/25pxncC-uQY" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+[Example output](https://www.youtube.com/embed/25pxncC-uQY)
 
 ## Usage
 
