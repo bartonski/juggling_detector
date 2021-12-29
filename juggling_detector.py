@@ -7,11 +7,13 @@ argv = sys.argv[1:]
 
 start_frame = 0
 end_frame = None
+show_mask = False
 
 try:
-    opts, args = getopt.getopt(argv, "s:e:", 
+    opts, args = getopt.getopt(argv, "s:e:m", 
                                 ["start_frame =",
-                                "end_frame ="])
+                                "end_frame =",
+                                "mask"])
     
 except:
     print("Error")
@@ -21,6 +23,8 @@ for opt, arg in opts:
         start_frame = arg
     elif opt in ['-e', '--end_frame']:
         end_frame = arg
+    elif opt in ['-m', '--mask']:
+        show_mask = True
 
 filename = str(sys.argv[-1])
 current_frame = 0
@@ -77,13 +81,15 @@ while ret and current_frame <= end_frame:
                     color = ( 0, 0, red )
                     cv2.circle(frame, (center[0], center[1]), 2, color, -1)
                 cv2.drawContours(frame, [cnt], -1, (0, 255, 0), 2)
-
-        out.write(frame)
-
-        cv2.namedWindow("Frame")        # Create a named window
-        cv2.moveWindow("Frame", 40,30)  # Move it to (40,30)
-        cv2.imshow("Frame", frame)
-        #cv2.imshow("Mask", mask)
+        if show_mask:
+            cv2.namedWindow("Mask")        # Create a named window
+            cv2.moveWindow("Mask", 40,30)  # Move it to (40,30)
+            cv2.imshow("Mask", mask)
+        else:
+            out.write(frame)
+            cv2.namedWindow("Frame")        # Create a named window
+            cv2.moveWindow("Frame", 40,30)  # Move it to (40,30)
+            cv2.imshow("Frame", frame)
 
         key = cv2.waitKey(1)
         if key == 27:
