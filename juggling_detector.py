@@ -14,6 +14,21 @@ show_mask = False
 #           NN %   -- output frame rate is a percentage of input frame rate
 #           NN x   -- output frame rate is a multiple of input frame rate
 
+# TODO: Implement '--no_trails'
+
+# TODO: Implement '--contour_color'
+
+# TODO: Implement '--trail_color'
+
+# TODO: Implement '--area_labels'
+
+# TODO: Implement '--area_threshold'
+
+# TODO: Implement '--grey_threshold'
+
+# TODO: Implement import and export of configuration
+
+
 try:
     opts, args = getopt.getopt(argv, "s:e:m", 
                                 ["start_frame =",
