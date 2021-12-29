@@ -8,6 +8,11 @@ argv = sys.argv[1:]
 start_frame = 0
 end_frame = None
 show_mask = False
+# TODO: implement frame rate.
+#       This will be in one of the following formats:
+#           NN fps -- output frame rate is set explicitly
+#           NN %   -- output frame rate is a percentage of input frame rate
+#           NN x   -- output frame rate is a multiple of input frame rate
 
 try:
     opts, args = getopt.getopt(argv, "s:e:m", 
