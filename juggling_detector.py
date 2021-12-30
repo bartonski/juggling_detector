@@ -8,6 +8,11 @@ argv = sys.argv[1:]
 start_frame = 0
 end_frame = None
 show_mask = False
+trails = True
+grey_threshold = 255
+area_threshold = 100
+area_labels = False
+
 # TODO: implement frame rate.
 #       This will be in one of the following formats:
 #           NN fps -- output frame rate is set explicitly
@@ -28,11 +33,19 @@ show_mask = False
 
 # TODO: Implement import and export of configuration
 
+# TODO: Write trails to separate image
+#       Use cv2.bitwise_and to merge trails with image
+#       (see https://youtu.be/WQeoO7MI0Bs?t=4347 )
+#       This should drastically improve performance.
+
+# TODO: I think I can use HSV masking to isolate the colors of balls and hands,
+#       which should make image recognition easier and more accurate.
 
 try:
-    opts, args = getopt.getopt(argv, "s:e:m", 
-                                ["start_frame =",
-                                "end_frame =",
+    opts, args = getopt.getopt(argv, "s:e:g:a:lm", 
+                                ["start_frame =", "end_frame =",
+                                "gray_threshold =", "grey_threshold =",
+                                "area_threshold =", "area_labels"
                                 "mask"])
     
 except:
@@ -43,6 +56,12 @@ for opt, arg in opts:
         start_frame = arg
     elif opt in ['-e', '--end_frame']:
         end_frame = arg
+    elif opt in ['-g', '--gray_threshold', '--grey_threshold']:
+        grey_threshold = arg
+    elif opt in ['-a', '--area_threshold']:
+        area_threshold = arg
+    elif opt in ['-l', '--area_labels']:
+        area_labels = True
     elif opt in ['-m', '--mask']:
         show_mask = True
 
@@ -85,13 +104,14 @@ centers = []
 while ret and current_frame <= end_frame:
     if current_frame >= start_frame:
         mask = object_detector.apply(frame)
-        _, mask = cv2.threshold( mask, 254, 255, cv2.THRESH_BINARY )
+        _, mask = cv2.threshold( mask, grey_threshold-1, grey_threshold,
+                                 cv2.THRESH_BINARY )
         contours, _ = cv2.findContours( mask,
                                         cv2.RETR_TREE,
                                         cv2.CHAIN_APPROX_SIMPLE )
         for cnt in contours:
             area = cv2.contourArea(cnt)
-            if area > 400:
+            if area > area_threshold:
                 M = cv2.moments(cnt)
                 current = [int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"])]
                 centers.append( current )
