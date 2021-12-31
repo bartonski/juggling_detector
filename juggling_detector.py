@@ -6,8 +6,7 @@ import getopt
 argv = sys.argv[1:]
 
 try:
-    opts, args
-        = getopt.getopt(
+    opts, args = getopt.getopt(
               argv, "s:e:g:a:lmr", [
               "start_frame =", "end_frame =",
               "gray_threshold =", "grey_threshold =",
@@ -95,6 +94,16 @@ print( f"trails: {trails}");
 current_frame = 0
 centers = []
 
+# Helper Functions for Video Read Loop -----------------------------------------
+
+def show_grid( image ):
+    # Draw horizontal lines
+    for y in range(0, height, grid_spacing):
+        cv2.line(image, ( 0, y), (width, y), grid_color, grid_width  )
+    # Draw vertical lines
+    for x in range(0, width, grid_spacing):
+        cv2.line(image, ( x, 0), (x, height), grid_color, grid_width  )
+
 # Video Read Loop --------------------------------------------------------------
 
 ret, frame = cap.read()
@@ -115,13 +124,8 @@ while ret and current_frame <= end_frame:
             image = frame
     
         if grid:
-            # Draw horizontal lines
-            for y in range(0, height, grid_spacing):
-                cv2.line(image, ( 0, y), (width, y), grid_color, grid_width  )
-            # Draw vertical lines
-            for x in range(0, width, grid_spacing):
-                cv2.line(image, ( x, 0), (x, height), grid_color, grid_width  )
-        
+            show_grid( image )   
+
         for cnt in contours:
             area = cv2.contourArea(cnt)
             if area > area_threshold:
