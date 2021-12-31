@@ -95,6 +95,8 @@ print( f"trails: {trails}");
 current_frame = 0
 centers = []
 
+# Video Read Loop --------------------------------------------------------------
+
 ret, frame = cap.read()
 
 while ret and current_frame <= end_frame:
