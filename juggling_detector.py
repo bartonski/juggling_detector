@@ -12,6 +12,7 @@ trails = True
 grey_threshold = 255
 area_threshold = 100
 area_labels = False
+trails = True
 
 # TODO: implement frame rate.
 #       This will be in one of the following formats:
@@ -19,17 +20,9 @@ area_labels = False
 #           NN %   -- output frame rate is a percentage of input frame rate
 #           NN x   -- output frame rate is a multiple of input frame rate
 
-# TODO: Implement '--no_trails'
-
 # TODO: Implement '--contour_color'
 
 # TODO: Implement '--trail_color'
-
-# TODO: Implement '--area_labels'
-
-# TODO: Implement '--area_threshold'
-
-# TODO: Implement '--grey_threshold'
 
 # TODO: Implement import and export of configuration
 
@@ -46,7 +39,7 @@ try:
                                 ["start_frame =", "end_frame =",
                                 "gray_threshold =", "grey_threshold =",
                                 "area_threshold =", "area_labels",
-                                "mask"])
+                                "no_trails", "mask"])
     
 except:
     print("Error")
@@ -62,9 +55,11 @@ for opt, arg in opts:
         grey_threshold = int(arg)
     elif opt in ['-a', '--area_threshold ']:
         area_threshold = int(arg)
-    elif opt in ['-l', '--area_labels ']:
+    elif opt in ['-l', '--area_labels']:
         area_labels = True
-    elif opt in ['-m', '--mask ']:
+    elif opt in [ '--no_trails']:
+        trails = False
+    elif opt in ['-m', '--mask']:
         show_mask = True
 
 filename = str(sys.argv[-1])
@@ -100,6 +95,7 @@ out = cv2.VideoWriter(
 print( f"size: {width}x{height}");
 print( f"start_frame: {start_frame}");
 print( f"end_frame: {end_frame}");
+print( f"trails: {trails}");
 
 ret, frame = cap.read()
 
@@ -124,14 +120,22 @@ while ret and current_frame <= end_frame:
             area = cv2.contourArea(cnt)
             if area > area_threshold:
                 M = cv2.moments(cnt)
-                current = [int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"])]
+                center_x = int(M["m10"] / M["m00"])
+                center_y = int(M["m01"] / M["m00"])
+                current = [center_x, center_y]
                 centers.append( current )
+                if trails:
+                    cv2.drawContours(image, [cnt], -1, (0, 255, 0), 2)
+                    for center in centers:
+                        red   = 0xFF
+                        color = ( 0, 0, red )
+                        cv2.circle(image, (center[0], center[1]), 2, color, -1)
                 cv2.drawContours(image, [cnt], -1, (0, 255, 0), 2)
-                for center in centers:
-                    red   = 0xFF
-                    color = ( 0, 0, red )
-                    cv2.circle(image, (center[0], center[1]), 2, color, -1)
-                cv2.drawContours(image, [cnt], -1, (0, 255, 0), 2)
+                if area_labels:
+                    cv2.putText(image, f"{area}", (center_x - 18, center_y - 18),
+                                cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 0), 2 )
+                    cv2.putText(image, f"{area}", (center_x - 20, center_y - 20),
+                                cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 2 )
 
         out.write(image)
         cv2.namedWindow(window_label)        # Create a named window
