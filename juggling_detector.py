@@ -104,6 +104,10 @@ def show_grid( image ):
     for x in range(0, width, grid_spacing):
         cv2.line(image, ( x, 0), (x, height), grid_color, grid_width  )
 
+def get_center( image, contour ):
+                M = cv2.moments(contour)
+                return [ int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]) ]
+
 # Video Read Loop --------------------------------------------------------------
 
 ret, frame = cap.read()
@@ -129,10 +133,7 @@ while ret and current_frame <= end_frame:
         for cnt in contours:
             area = cv2.contourArea(cnt)
             if area > area_threshold:
-                M = cv2.moments(cnt)
-                center_x = int(M["m10"] / M["m00"])
-                center_y = int(M["m01"] / M["m00"])
-                current = [center_x, center_y]
+                current = get_center( image, cnt )
                 centers.append( current )
                 if trails:
                     cv2.drawContours(image, [cnt], -1, (0, 255, 0), 2)
@@ -142,9 +143,9 @@ while ret and current_frame <= end_frame:
                         cv2.circle(image, (center[0], center[1]), 2, color, -1)
                 cv2.drawContours(image, [cnt], -1, (0, 255, 0), 2)
                 if area_labels:
-                    cv2.putText(image, f"{area}", (center_x - 18, center_y - 18),
+                    cv2.putText(image, f"{area}", (current[0]-18, current[1]-18),
                                 cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 0), 2 )
-                    cv2.putText(image, f"{area}", (center_x - 20, center_y - 20),
+                    cv2.putText(image, f"{area}", (current[0]-20, current[1]-20),
                                 cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 2 )
 
         out.write(image)
