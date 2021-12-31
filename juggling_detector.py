@@ -45,24 +45,26 @@ try:
     opts, args = getopt.getopt(argv, "s:e:g:a:lm", 
                                 ["start_frame =", "end_frame =",
                                 "gray_threshold =", "grey_threshold =",
-                                "area_threshold =", "area_labels"
+                                "area_threshold =", "area_labels",
                                 "mask"])
     
 except:
     print("Error")
 
+print(f"opts: {opts}")
+
 for opt, arg in opts:
-    if opt in ['-s', '--start_frame']:
-        start_frame = arg
-    elif opt in ['-e', '--end_frame']:
-        end_frame = arg
-    elif opt in ['-g', '--gray_threshold', '--grey_threshold']:
-        grey_threshold = arg
-    elif opt in ['-a', '--area_threshold']:
-        area_threshold = arg
-    elif opt in ['-l', '--area_labels']:
+    if opt in ['-s', '--start_frame ']:
+        start_frame = int(arg)
+    elif opt in ['-e', '--end_frame ']:
+        end_frame = int(arg)
+    elif opt in ['-g', '--gray_threshold ', '--grey_threshold ']:
+        grey_threshold = int(arg)
+    elif opt in ['-a', '--area_threshold ']:
+        area_threshold = int(arg)
+    elif opt in ['-l', '--area_labels ']:
         area_labels = True
-    elif opt in ['-m', '--mask']:
+    elif opt in ['-m', '--mask ']:
         show_mask = True
 
 filename = str(sys.argv[-1])
@@ -90,12 +92,14 @@ object_detector = cv2.createBackgroundSubtractorMOG2(history=100, varThreshold=4
 
 out = cv2.VideoWriter(
         output_file,
-        cv2.VideoWriter_fourcc('M','J','P','G'),
+        cv2.VideoWriter_fourcc('m','p','4','v'),
         frame_rate/2,
         (width, height)
       )
 
 print( f"size: {width}x{height}");
+print( f"start_frame: {start_frame}");
+print( f"end_frame: {end_frame}");
 
 ret, frame = cap.read()
 
@@ -109,27 +113,30 @@ while ret and current_frame <= end_frame:
         contours, _ = cv2.findContours( mask,
                                         cv2.RETR_TREE,
                                         cv2.CHAIN_APPROX_SIMPLE )
+        if show_mask:
+            window_label = "Mask"
+            image = mask
+        else:
+            window_label = "Frame"
+            image = frame
+
         for cnt in contours:
             area = cv2.contourArea(cnt)
             if area > area_threshold:
                 M = cv2.moments(cnt)
                 current = [int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"])]
                 centers.append( current )
-                cv2.drawContours(frame, [cnt], -1, (0, 255, 0), 2)
+                cv2.drawContours(image, [cnt], -1, (0, 255, 0), 2)
                 for center in centers:
                     red   = 0xFF
                     color = ( 0, 0, red )
-                    cv2.circle(frame, (center[0], center[1]), 2, color, -1)
-                cv2.drawContours(frame, [cnt], -1, (0, 255, 0), 2)
-        if show_mask:
-            cv2.namedWindow("Mask")        # Create a named window
-            cv2.moveWindow("Mask", 40,30)  # Move it to (40,30)
-            cv2.imshow("Mask", mask)
-        else:
-            out.write(frame)
-            cv2.namedWindow("Frame")        # Create a named window
-            cv2.moveWindow("Frame", 40,30)  # Move it to (40,30)
-            cv2.imshow("Frame", frame)
+                    cv2.circle(image, (center[0], center[1]), 2, color, -1)
+                cv2.drawContours(image, [cnt], -1, (0, 255, 0), 2)
+
+        out.write(image)
+        cv2.namedWindow(window_label)        # Create a named window
+        cv2.moveWindow(window_label, 40,30)  # Move it to (40,30)
+        cv2.imshow(window_label, image)
 
         key = cv2.waitKey(1)
         if key == 27:
