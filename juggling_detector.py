@@ -5,15 +5,6 @@ import re
 import getopt
 argv = sys.argv[1:]
 
-start_frame = 0
-end_frame = None
-show_mask = False
-trails = True
-grey_threshold = 255
-area_threshold = 100
-area_labels = False
-trails = True
-
 # TODO: implement frame rate.
 #       This will be in one of the following formats:
 #           NN fps -- output frame rate is set explicitly
@@ -35,16 +26,31 @@ trails = True
 #       which should make image recognition easier and more accurate.
 
 try:
-    opts, args = getopt.getopt(argv, "s:e:g:a:lm", 
+    opts, args = getopt.getopt(argv, "s:e:g:a:lmr", 
                                 ["start_frame =", "end_frame =",
                                 "gray_threshold =", "grey_threshold =",
                                 "area_threshold =", "area_labels",
-                                "no_trails", "mask"])
+                                "no_trails", "mask",
+                                "grid", "grid_spacing ="
+                                ])
     
 except:
     print("Error")
 
 print(f"opts: {opts}")
+
+start_frame = 0
+end_frame = None
+show_mask = False
+trails = True
+grey_threshold = 255
+area_threshold = 100
+area_labels = False
+trails = True
+grid = False
+grid_spacing = 100
+grid_width = 2
+grid_color = ( 128, 128, 128 )
 
 for opt, arg in opts:
     if opt in ['-s', '--start_frame ']:
@@ -61,6 +67,10 @@ for opt, arg in opts:
         trails = False
     elif opt in ['-m', '--mask']:
         show_mask = True
+    elif opt in ['-r', '--grid']:
+        grid = True
+    elif opt in [ '--grid_spacing ']:
+        grid_spacing = int(arg)
 
 filename = str(sys.argv[-1])
 current_frame = 0
@@ -115,7 +125,15 @@ while ret and current_frame <= end_frame:
         else:
             window_label = "Frame"
             image = frame
-
+    
+        if grid:
+            # Draw horizontal lines
+            for y in range(0, height, grid_spacing):
+                cv2.line(image, ( 0, y), (width, y), grid_color, grid_width  )
+            # Draw vertical lines
+            for x in range(0, width, grid_spacing):
+                cv2.line(image, ( x, 0), (x, height), grid_color, grid_width  )
+        
         for cnt in contours:
             area = cv2.contourArea(cnt)
             if area > area_threshold:
