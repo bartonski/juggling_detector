@@ -5,39 +5,22 @@ import re
 import getopt
 argv = sys.argv[1:]
 
-# TODO: implement frame rate.
-#       This will be in one of the following formats:
-#           NN fps -- output frame rate is set explicitly
-#           NN %   -- output frame rate is a percentage of input frame rate
-#           NN x   -- output frame rate is a multiple of input frame rate
-
-# TODO: Implement '--contour_color'
-
-# TODO: Implement '--trail_color'
-
-# TODO: Implement import and export of configuration
-
-# TODO: Write trails to separate image
-#       Use cv2.bitwise_and to merge trails with image
-#       (see https://youtu.be/WQeoO7MI0Bs?t=4347 )
-#       This should drastically improve performance.
-
-# TODO: I think I can use HSV masking to isolate the colors of balls and hands,
-#       which should make image recognition easier and more accurate.
-
 try:
-    opts, args = getopt.getopt(argv, "s:e:g:a:lmr", 
-                                ["start_frame =", "end_frame =",
-                                "gray_threshold =", "grey_threshold =",
-                                "area_threshold =", "area_labels",
-                                "no_trails", "mask",
-                                "grid", "grid_spacing ="
-                                ])
-    
+    opts, args
+        = getopt.getopt(
+              argv, "s:e:g:a:lmr", [
+              "start_frame =", "end_frame =",
+              "gray_threshold =", "grey_threshold =",
+              "area_threshold =", "area_labels",
+              "no_trails", "mask",
+              "grid", "grid_spacing =" ]
+          )
 except:
     print("Error")
 
 print(f"opts: {opts}")
+
+# Default Values ---------------------------------------------------------------
 
 start_frame = 0
 end_frame = None
@@ -51,6 +34,8 @@ grid = False
 grid_spacing = 100
 grid_width = 2
 grid_color = ( 128, 128, 128 )
+
+# Parse Arguments --------------------------------------------------------------
 
 for opt, arg in opts:
     if opt in ['-s', '--start_frame ']:
@@ -72,8 +57,11 @@ for opt, arg in opts:
     elif opt in [ '--grid_spacing ']:
         grid_spacing = int(arg)
 
+# Set-up -----------------------------------------------------------------------
+
+## Input Video file
+
 filename = str(sys.argv[-1])
-current_frame = 0
 
 cap = cv2.VideoCapture(filename)
 width      = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -81,35 +69,33 @@ height     = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 frame_rate = int(cap.get(cv2.CAP_PROP_FPS))
 frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-if end_frame is None:
-    end_frame = frame_count
-#r = re.compile('(.*)\.([^.]+$)')
-#basename = r.sub( '', filename )
+## Output Video file
+
 result = re.search( '(.*)\.([^.]+$)', filename )
 basename, extension = result.groups()
 label="detector"
 output_file=f"{basename}.{label}.{extension}"
-#print( f"basename: {basename}, extension: {extension}")
+
+out = cv2.VideoWriter(
+        output_file, cv2.VideoWriter_fourcc('m','p','4','v'),
+        frame_rate/2, (width, height)
+      )
+
+if end_frame is None:
+    end_frame = frame_count
 
 # Object detection from stable camera
 object_detector = cv2.createBackgroundSubtractorMOG2(history=100, varThreshold=40)
-
-
-out = cv2.VideoWriter(
-        output_file,
-        cv2.VideoWriter_fourcc('m','p','4','v'),
-        frame_rate/2,
-        (width, height)
-      )
 
 print( f"size: {width}x{height}");
 print( f"start_frame: {start_frame}");
 print( f"end_frame: {end_frame}");
 print( f"trails: {trails}");
 
-ret, frame = cap.read()
-
+current_frame = 0
 centers = []
+
+ret, frame = cap.read()
 
 while ret and current_frame <= end_frame:
     if current_frame >= start_frame:
