@@ -108,6 +108,15 @@ def get_center( image, contour ):
                 M = cv2.moments(contour)
                 return [ int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]) ]
 
+def area_labels( image, area, label_offset, shadow_offset ):
+    offset=label_offset-shadow_offset
+    cv2.putText(image, f"{area}", (current[0]-offset, current[1]-offset),
+                cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 0), 2 )
+    offset=label_offset
+    cv2.putText(image, f"{area}", (current[0]-offset, current[1]-offset),
+                cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 2 )
+
+
 # Video Read Loop --------------------------------------------------------------
 
 ret, frame = cap.read()
@@ -133,6 +142,7 @@ while ret and current_frame <= end_frame:
         for cnt in contours:
             area = cv2.contourArea(cnt)
             if area > area_threshold:
+                # Add tracking here.
                 current = get_center( image, cnt )
                 centers.append( current )
                 if trails:
@@ -143,10 +153,7 @@ while ret and current_frame <= end_frame:
                         cv2.circle(image, (center[0], center[1]), 2, color, -1)
                 cv2.drawContours(image, [cnt], -1, (0, 255, 0), 2)
                 if area_labels:
-                    cv2.putText(image, f"{area}", (current[0]-18, current[1]-18),
-                                cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 0), 2 )
-                    cv2.putText(image, f"{area}", (current[0]-20, current[1]-20),
-                                cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 2 )
+                    area_labels( image, area, 20, 3 )
 
         out.write(image)
         cv2.namedWindow(window_label)        # Create a named window
