@@ -139,7 +139,7 @@ print( f"After def. area_labels: {area_labels}")
 # frame objects have an object id, a center and a 'seen' field.
 last_frame_objects = []  
 object_id=0
-tracking_threshold=10
+tracking_threshold=20
 def track( contours ):
     #print( f"contours: {contours}")
     frame_objects = []
@@ -219,8 +219,8 @@ while ret and current_frame <= end_frame:
             label( image, to["area"], to["center"], 20, 3 )
 
     out.write(image)
-    cv2.namedWindow(window_label)        # Create a named window
-    cv2.moveWindow(window_label, 40,30)  # Move it to (40,30)
+    cv2.namedWindow(window_label, cv2.WINDOW_NORMAL) # Create a named window
+    cv2.moveWindow(window_label, 40,30)              # Move it to (40,30)
     cv2.imshow(window_label, image)
 
     key = cv2.waitKey(1)
