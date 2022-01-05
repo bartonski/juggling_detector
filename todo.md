@@ -28,8 +28,6 @@ Use `cv2.bitwise_and` to merge trails with image
 (see <https://youtu.be/WQeoO7MI0Bs?t=4347> )
 This should drastically improve performance.
 
-### Add object tracking. See https://www.youtube.com/watch?v=GgGro5IV-cs
-
 ### Add Regions of interest
 
 * left throw

@@ -34,6 +34,8 @@ grid = False
 grid_spacing = 100
 grid_width = 2
 grid_color = ( 128, 128, 128 )
+frame_delay = 1
+toggle = [1, 0]
 
 # Parse Arguments --------------------------------------------------------------
 
@@ -223,9 +225,13 @@ while ret and current_frame <= end_frame:
     cv2.moveWindow(window_label, 40,30)              # Move it to (40,30)
     cv2.imshow(window_label, image)
 
-    key = cv2.waitKey(1)
+    key = cv2.waitKey(frame_delay)
     if key == 27:
         break
+    elif key == ord(' '):
+        frame_delay = toggle[frame_delay]
+    elif key == ord('f'):
+        frame_delay = 0
 
     ret, frame = cap.read()
     current_frame += 1
