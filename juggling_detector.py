@@ -4,6 +4,7 @@ import sys
 import re
 import getopt
 import math
+import json
 argv = sys.argv[1:]
 
 try:
@@ -13,7 +14,9 @@ try:
               "gray_threshold =", "grey_threshold =",
               "area_threshold =", "area_labels",
               "no_trails", "mask",
-              "grid", "grid_spacing =" ]
+              "grid", "grid_spacing =",
+              "blur_radius =",
+              "detector_history =", "detector_threshold =" ]
           )
 except:
     print("Error")
@@ -36,6 +39,9 @@ grid_width = 2
 grid_color = ( 128, 128, 128 )
 frame_delay = 1
 toggle = [1, 0]
+detector_history = 100
+detector_threshold = 40
+blur_radius = None
 
 # Parse Arguments --------------------------------------------------------------
 
@@ -58,6 +64,12 @@ for opt, arg in opts:
         grid = True
     elif opt in [ '--grid_spacing ']:
         grid_spacing = int(arg)
+    elif opt in ['--detector_threshold ']:
+        detector_threshold = int(arg)
+    elif opt in ['--detector_history ']:
+        detector_history = int(arg)
+    elif opt in ['--blur_radius ']:
+        blur_radius = int(arg)
 
 # Set-up -----------------------------------------------------------------------
 
@@ -87,7 +99,9 @@ if end_frame is None:
     end_frame = frame_count
 
 # Object detection from stable camera
-object_detector = cv2.createBackgroundSubtractorMOG2(history=100, varThreshold=40)
+object_detector = cv2.createBackgroundSubtractorMOG2(
+                    history=detector_history,
+                    varThreshold=detector_threshold)
 
 print( f"size: {width}x{height}")
 print( f"video frame count: {frame_count}")
@@ -102,6 +116,8 @@ print( f"area_labels: {area_labels}" )
 print( f"grid: {grid}" )
 print( f"grid_spacing: {grid_spacing}" )
 print( f"grid_width: {grid_width}" )
+print( f"detector_threshold: {detector_threshold}")
+print( f"detector_history: {detector_history}")
 
 current_frame = 0
 centers = []
@@ -120,13 +136,15 @@ def get_center( contour ):
                 M = cv2.moments(contour)
                 return [ int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]) ]
 
+# May want to center text, see
+# https://gist.github.com/xcsrz/8938a5d4a47976c745407fe2788c813a
 def object_labels( image, text, center, label_offset, shadow_offset ):
     offset=label_offset-shadow_offset
     cv2.putText(image, f"{text}", (center[0]-offset, center[1]-offset),
                 cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 0), 2 )
     offset=label_offset
     cv2.putText(image, f"{text}", (center[0]-offset, center[1]-offset),
-                cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 255), 2 )
+                cv2.FONT_HERSHEY_PLAIN, 1, (0, 255, 255), 2 )
 
 def label( image, text, center, label_offset, shadow_offset ):
     offset=label_offset-shadow_offset
@@ -181,7 +199,12 @@ while ret and current_frame <= end_frame:
         current_frame += 1
         continue
     print( f"current_frame: {current_frame}")
-    mask = object_detector.apply(frame)
+    if blur_radius is not None:
+        blur_diameter = blur_radius * 2 + 1
+        mask_input = cv2.GaussianBlur(frame, (blur_diameter, blur_diameter), 0)
+    else:
+        mask_input = frame
+    mask = object_detector.apply(mask_input)
     _, mask = cv2.threshold( mask, grey_threshold-1, grey_threshold,
                                 cv2.THRESH_BINARY )
     contours, _ = cv2.findContours( mask,
@@ -216,7 +239,7 @@ while ret and current_frame <= end_frame:
         #     object_labels( image, to["object_id"], to["center"], 10, 2)
         oid=to["object_id"]
         print(f"to[object_id]: {oid} to[center] {to['center']}")
-        object_labels( image, to["object_id"], to["center"], 10, 2)
+        object_labels( image, to["object_id"], to["center"], 0, 2)
         if area_labels:
             label( image, to["area"], to["center"], 20, 3 )
 
