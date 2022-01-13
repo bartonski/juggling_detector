@@ -16,6 +16,7 @@ try:
               "no_trails", "mask",
               "grid", "grid_spacing =",
               "blur_radius =",
+              "throw_roi_bottom =",
               "detector_history =", "detector_threshold =" ]
           )
 except:
@@ -42,6 +43,7 @@ toggle = [1, 0]
 detector_history = 100
 detector_threshold = 40
 blur_radius = None
+throw_roi_bottom = None
 
 # Parse Arguments --------------------------------------------------------------
 
@@ -70,6 +72,8 @@ for opt, arg in opts:
         detector_history = int(arg)
     elif opt in ['--blur_radius ']:
         blur_radius = int(arg)
+    elif opt in ['--throw_roi_bottom ']:
+        throw_roi_bottom = int(arg)
 
 # Set-up -----------------------------------------------------------------------
 
@@ -82,6 +86,10 @@ width      = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 height     = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 frame_rate = int(cap.get(cv2.CAP_PROP_FPS))
 frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+if throw_roi_bottom is None:
+    throw_roi_bottom = height-1
+throw_roi_left = 0
+throw_roi_right = width-1
 
 ## Output Video file
 
@@ -157,7 +165,7 @@ def label( image, text, center, label_offset, shadow_offset ):
 print( f"After def. area_labels: {area_labels}")
 
 # frame objects have an object id, a center and a 'seen' field.
-last_frame_objects = []  
+last_frame_objects = []
 object_id=0
 tracking_threshold=20
 def track( contours ):
@@ -168,7 +176,7 @@ def track( contours ):
     for contour in contours:
         area = cv2.contourArea(contour)
         if area > area_threshold:
-            frame_object = {} 
+            frame_object = {}
             frame_object["center"]=get_center(contour)
             frame_object["seen"]=False
             frame_object["contour"] = contour
@@ -180,7 +188,7 @@ def track( contours ):
                     frame_object["object_id"] = lfo["object_id"]
                     frame_object["seen"] = True
             #print( f"frame_object: {frame_object}")
-            frame_objects.append(frame_object) 
+            frame_objects.append(frame_object)
     new_frame_objects = []
     for fo in frame_objects:
         if fo["seen"] == False:
@@ -198,12 +206,14 @@ while ret and current_frame <= end_frame:
     if current_frame < start_frame:
         current_frame += 1
         continue
+
+    throw_roi = frame[0 : throw_roi_bottom, throw_roi_left: throw_roi_right ]
     print( f"current_frame: {current_frame}")
     if blur_radius is not None:
         blur_diameter = blur_radius * 2 + 1
-        mask_input = cv2.GaussianBlur(frame, (blur_diameter, blur_diameter), 0)
+        mask_input = cv2.GaussianBlur(throw_roi, (blur_diameter, blur_diameter), 0)
     else:
-        mask_input = frame
+        mask_input = throw_roi
     mask = object_detector.apply(mask_input)
     _, mask = cv2.threshold( mask, grey_threshold-1, grey_threshold,
                                 cv2.THRESH_BINARY )
@@ -218,7 +228,7 @@ while ret and current_frame <= end_frame:
         image = frame
 
     if grid:
-        show_grid( image )   
+        show_grid( image )
 
 
     tracked_objects=track(contours)
@@ -233,10 +243,6 @@ while ret and current_frame <= end_frame:
                 color = ( 0, 0, red )
                 cv2.circle(image, (center[0], center[1]), 2, color, -1)
         cv2.drawContours(image, [to["contour"]], -1, (0, 255, 0), 2)
-        # if object_id in to:
-        #     oid=to["object_id"]
-        #     print("to[object_id]: {oid}")
-        #     object_labels( image, to["object_id"], to["center"], 10, 2)
         oid=to["object_id"]
         print(f"to[object_id]: {oid} to[center] {to['center']}")
         object_labels( image, to["object_id"], to["center"], 0, 2)
@@ -261,4 +267,4 @@ while ret and current_frame <= end_frame:
 
 cap.release()
 out.release()
-#cv2.destroyAllWindows()
+cv2.destroyAllWindows()
