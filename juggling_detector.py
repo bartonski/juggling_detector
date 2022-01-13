@@ -48,31 +48,31 @@ throw_roi_bottom = None
 # Parse Arguments --------------------------------------------------------------
 
 for opt, arg in opts:
-    if opt in ['-s', '--start_frame ']:
+    if opt in ('-s', '--start_frame '):
         start_frame = int(arg)
-    elif opt in ['-e', '--end_frame ']:
+    elif opt in ('-e', '--end_frame '):
         end_frame = int(arg)
-    elif opt in ['-g', '--gray_threshold ', '--grey_threshold ']:
+    elif opt in ('-g', '--gray_threshold ', '--grey_threshold '):
         grey_threshold = int(arg)
-    elif opt in ['-a', '--area_threshold ']:
+    elif opt in ('-a', '--area_threshold '):
         area_threshold = int(arg)
-    elif opt in ['-l', '--area_labels']:
+    elif opt in ('-l', '--area_labels'):
         area_labels = True
-    elif opt in [ '--no_trails']:
+    elif opt in ( '--no_trails'):
         trails = False
-    elif opt in ['-m', '--mask']:
+    elif opt in ('-m', '--mask'):
         show_mask = True
-    elif opt in ['-r', '--grid']:
+    elif opt in ('-r', '--grid'):
         grid = True
-    elif opt in [ '--grid_spacing ']:
+    elif opt in ( '--grid_spacing '):
         grid_spacing = int(arg)
-    elif opt in ['--detector_threshold ']:
+    elif opt in ('--detector_threshold '):
         detector_threshold = int(arg)
-    elif opt in ['--detector_history ']:
+    elif opt in ('--detector_history '):
         detector_history = int(arg)
-    elif opt in ['--blur_radius ']:
+    elif opt in ('--blur_radius '):
         blur_radius = int(arg)
-    elif opt in ['--throw_roi_bottom ']:
+    elif opt in ('--throw_roi_bottom '):
         throw_roi_bottom = int(arg)
 
 # Set-up -----------------------------------------------------------------------
