@@ -5,21 +5,29 @@ import re
 import getopt
 import math
 import json
+import numpy as np
+
 argv = sys.argv[1:]
+
+print( f"argv: {argv}" )
 
 try:
     opts, args = getopt.getopt(
               argv, "s:e:g:a:lmr", [
-              "start_frame =", "end_frame =",
-              "gray_threshold =", "grey_threshold =",
-              "area_threshold =", "area_labels",
-              "no_trails", "mask",
-              "grid", "grid_spacing =",
-              "blur_radius =",
-              "throw_roi_bottom =",
-              "detector_history =", "detector_threshold =" ]
+                "start_frame =", "end_frame =",
+                "gray_threshold =", "grey_threshold =",
+                "area_threshold =", "area_labels",
+                "no_trails", "mask",
+                "grid", "grid_spacing =",
+                "blur_radius =",
+                "throw_roi_bottom =",
+                "detector_history =", "detector_threshold =",
+                "write_throw_mask",
+                "write_left_hand_mask",
+                "write_right_hand_mask"
+              ]
           )
-except:
+except: 
     print("Error")
 
 print(f"opts: {opts}")
@@ -44,6 +52,18 @@ detector_history = 100
 detector_threshold = 40
 blur_radius = None
 throw_roi_bottom = None
+throw_mask = None
+left_hand_mask = None
+right_hand_mask = None
+
+filename = str(sys.argv[-1])
+
+## Output Video file
+
+result = re.search( '(.*)\.([^.]+$)', filename )
+basename, extension = result.groups()
+label="detector"
+output_file=f"{basename}.{label}.{extension}"
 
 # Parse Arguments --------------------------------------------------------------
 
@@ -74,12 +94,17 @@ for opt, arg in opts:
         blur_radius = int(arg)
     elif opt in ('--throw_roi_bottom '):
         throw_roi_bottom = int(arg)
+    elif opt in ( '--write_throw_mask' ):
+        throw_mask = f"{basename}.throw_mask.png"
+    elif opt in ( '--write_left_hand_mask' ):
+        left_hand_mask = f"{basename}.left_hand_mask.png"
+    elif opt in ( '--write_right_hand_mask' ):
+        right_hand_mask = f"{basename}.right_hand_mask.png"
 
 # Set-up -----------------------------------------------------------------------
 
 ## Input Video file
 
-filename = str(sys.argv[-1])
 
 cap = cv2.VideoCapture(filename)
 width      = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -90,13 +115,6 @@ if throw_roi_bottom is None:
     throw_roi_bottom = height-1
 throw_roi_left = 0
 throw_roi_right = width-1
-
-## Output Video file
-
-result = re.search( '(.*)\.([^.]+$)', filename )
-basename, extension = result.groups()
-label="detector"
-output_file=f"{basename}.{label}.{extension}"
 
 out = cv2.VideoWriter(
         output_file, cv2.VideoWriter_fourcc('m','p','4','v'),
@@ -110,6 +128,10 @@ if end_frame is None:
 object_detector = cv2.createBackgroundSubtractorMOG2(
                     history=detector_history,
                     varThreshold=detector_threshold)
+
+## Trails image
+
+trails_write_mask = np.zeros( [height, width, 3], dtype = np.uint8 ) 
 
 print( f"size: {width}x{height}")
 print( f"video frame count: {frame_count}")
@@ -236,6 +258,7 @@ while ret and current_frame <= end_frame:
     for to in tracked_objects:
         # print(f"to: {to}")
         centers.append(to["center"])
+        cv2.circle(trails_write_mask, (to["center"][0], to["center"][1]), 2, (255, 255, 255), -1)
         if trails:
             cv2.drawContours(image, [to["contour"]], -1, (0, 255, 0), 2)
             for center in centers:
@@ -264,6 +287,14 @@ while ret and current_frame <= end_frame:
 
     ret, frame = cap.read()
     current_frame += 1
+
+
+if throw_mask is not None:
+    cv2.imwrite( throw_mask, trails_write_mask  )
+if left_hand_mask is not None:
+    cv2.imwrite( left_hand_mask, trails_write_mask  )
+if right_hand_mask is not None:
+    cv2.imwrite( right_hand_mask, trails_write_mask  )
 
 cap.release()
 out.release()
