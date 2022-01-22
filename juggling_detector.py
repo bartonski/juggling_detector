@@ -8,14 +8,12 @@ import json
 import numpy as np
 import configuration
 
+# Arguments and Configuration --------------------------------------------------
+
 parser = configuration.parser
-
 argv = sys.argv[1:]
-
 print( f"argv: {argv}" )
-
 o = parser.parse_args( argv )
-
 print( f"o: {o}")
 
 # Default Values ---------------------------------------------------------------
@@ -31,22 +29,6 @@ right_hand_mask = None
 
 filename = str(sys.argv[-1])
 
-## Output Video file
-
-result = re.search( '(.*)\.([^.]+$)', filename )
-basename, extension = result.groups()
-label="detector"
-output_file=f"{basename}.{label}.{extension}"
-
-## Mask files
-
-if o.write_throw_mask is not None:
-    throw_mask = f"{basename}.throw_mask.png"
-if o.write_left_hand_mask is not None:
-    left_hand_mask = f"{basename}.left_hand_mask.png"
-if o.write_right_hand_mask is not None:
-    right_hand_mask = f"{basename}.right_hand_mask.png"
-
 # Set-up -----------------------------------------------------------------------
 
 ## Input Video file
@@ -61,10 +43,26 @@ if o.throw_roi_bottom is None:
 throw_roi_left = 0
 throw_roi_right = width-1
 
+## Output Video file
+
+result = re.search( '(.*)\.([^.]+$)', filename )
+basename, extension = result.groups()
+label="detector"
+output_file=f"{basename}.{label}.{extension}"
+
 out = cv2.VideoWriter(
         output_file, cv2.VideoWriter_fourcc('m','p','4','v'),
         frame_rate/2, (width, height)
       )
+
+## Mask files
+
+if o.write_throw_mask is not None:
+    throw_mask = f"{basename}.throw_mask.png"
+if o.write_left_hand_mask is not None:
+    left_hand_mask = f"{basename}.left_hand_mask.png"
+if o.write_right_hand_mask is not None:
+    right_hand_mask = f"{basename}.right_hand_mask.png"
 
 if o.end_frame is None:
     o.end_frame = frame_count
@@ -86,7 +84,6 @@ print( f"size: {width}x{height}")
 print( f"video frame count: {frame_count}")
 print( f"options: {o}")
 print( f"selection frame count: {o.end_frame-o.start_frame}")
-
 
 current_frame = 0
 centers = []
@@ -190,7 +187,6 @@ while ret and current_frame <= o.end_frame:
 
     if o.grid:
         show_grid( image )
-
 
     tracked_objects=track(contours)
     #print(f"tracked_objects: {tracked_objects}")
