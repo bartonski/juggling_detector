@@ -5,91 +5,31 @@ import re
 import getopt
 import math
 import json
+import numpy as np
+import configuration
+
+parser = configuration.parser
+
 argv = sys.argv[1:]
 
-try:
-    opts, args = getopt.getopt(
-              argv, "s:e:g:a:lmr", [
-              "start_frame =", "end_frame =",
-              "gray_threshold =", "grey_threshold =",
-              "area_threshold =", "area_labels",
-              "no_trails", "mask",
-              "grid", "grid_spacing =",
-              "blur_radius =",
-              "throw_roi_bottom =",
-              "detector_history =", "detector_threshold =" ]
-          )
-except:
-    print("Error")
+print( f"argv: {argv}" )
 
-print(f"opts: {opts}")
+o = parser.parse_args( argv )
+
+print( f"o: {o}")
 
 # Default Values ---------------------------------------------------------------
 
-start_frame = 0
-end_frame = None
-show_mask = False
-trails = True
-grey_threshold = 255
-area_threshold = 100
-area_labels = False
-trails = True
-grid = False
-grid_spacing = 100
-grid_width = 2
+trails = not o.no_trails
 grid_color = ( 128, 128, 128 )
+grid_width = 2
 frame_delay = 1
 toggle = [1, 0]
-detector_history = 100
-detector_threshold = 40
-blur_radius = None
-throw_roi_bottom = None
-
-# Parse Arguments --------------------------------------------------------------
-
-for opt, arg in opts:
-    if opt in ['-s', '--start_frame ']:
-        start_frame = int(arg)
-    elif opt in ['-e', '--end_frame ']:
-        end_frame = int(arg)
-    elif opt in ['-g', '--gray_threshold ', '--grey_threshold ']:
-        grey_threshold = int(arg)
-    elif opt in ['-a', '--area_threshold ']:
-        area_threshold = int(arg)
-    elif opt in ['-l', '--area_labels']:
-        area_labels = True
-    elif opt in [ '--no_trails']:
-        trails = False
-    elif opt in ['-m', '--mask']:
-        show_mask = True
-    elif opt in ['-r', '--grid']:
-        grid = True
-    elif opt in [ '--grid_spacing ']:
-        grid_spacing = int(arg)
-    elif opt in ['--detector_threshold ']:
-        detector_threshold = int(arg)
-    elif opt in ['--detector_history ']:
-        detector_history = int(arg)
-    elif opt in ['--blur_radius ']:
-        blur_radius = int(arg)
-    elif opt in ['--throw_roi_bottom ']:
-        throw_roi_bottom = int(arg)
-
-# Set-up -----------------------------------------------------------------------
-
-## Input Video file
+throw_mask = None
+left_hand_mask = None
+right_hand_mask = None
 
 filename = str(sys.argv[-1])
-
-cap = cv2.VideoCapture(filename)
-width      = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-height     = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-frame_rate = int(cap.get(cv2.CAP_PROP_FPS))
-frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-if throw_roi_bottom is None:
-    throw_roi_bottom = height-1
-throw_roi_left = 0
-throw_roi_right = width-1
 
 ## Output Video file
 
@@ -98,34 +38,51 @@ basename, extension = result.groups()
 label="detector"
 output_file=f"{basename}.{label}.{extension}"
 
+## Mask files
+
+if o.write_throw_mask is not None:
+    throw_mask = f"{basename}.throw_mask.png"
+if o.write_left_hand_mask is not None:
+    left_hand_mask = f"{basename}.left_hand_mask.png"
+if o.write_right_hand_mask is not None:
+    right_hand_mask = f"{basename}.right_hand_mask.png"
+
+# Set-up -----------------------------------------------------------------------
+
+## Input Video file
+
+cap = cv2.VideoCapture(filename)
+width      = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+height     = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+frame_rate = int(cap.get(cv2.CAP_PROP_FPS))
+frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+if o.throw_roi_bottom is None:
+    o.throw_roi_bottom = height-1
+throw_roi_left = 0
+throw_roi_right = width-1
+
 out = cv2.VideoWriter(
         output_file, cv2.VideoWriter_fourcc('m','p','4','v'),
         frame_rate/2, (width, height)
       )
 
-if end_frame is None:
-    end_frame = frame_count
+if o.end_frame is None:
+    o.end_frame = frame_count
 
 # Object detection from stable camera
 object_detector = cv2.createBackgroundSubtractorMOG2(
-                    history=detector_history,
-                    varThreshold=detector_threshold)
+                    history=o.detector_history,
+                    varThreshold=o.detector_threshold)
+
+## Trails image
+
+trails_mask = np.zeros( [height, width, 3], dtype = np.uint8 ) 
 
 print( f"size: {width}x{height}")
 print( f"video frame count: {frame_count}")
-print( f"start_frame: {start_frame}")
-print( f"end_frame: {end_frame}")
-print( f"selection frame count: {end_frame-start_frame}")
-print( f"trails: {trails}")
-print( f"show_mask: {show_mask}" )
-print( f"grey_threshold: {grey_threshold}" )
-print( f"area_threshold: {area_threshold}" )
-print( f"area_labels: {area_labels}" )
-print( f"grid: {grid}" )
-print( f"grid_spacing: {grid_spacing}" )
-print( f"grid_width: {grid_width}" )
-print( f"detector_threshold: {detector_threshold}")
-print( f"detector_history: {detector_history}")
+print( f"options: {o}")
+print( f"selection frame count: {o.end_frame-o.start_frame}")
+
 
 current_frame = 0
 centers = []
@@ -134,10 +91,10 @@ centers = []
 
 def show_grid( image ):
     # Draw horizontal lines
-    for y in range(0, height, grid_spacing):
+    for y in range(0, height, o.grid_spacing):
         cv2.line(image, ( 0, y), (width, y), grid_color, grid_width  )
     # Draw vertical lines
-    for x in range(0, width, grid_spacing):
+    for x in range(0, width, o.grid_spacing):
         cv2.line(image, ( x, 0), (x, height), grid_color, grid_width  )
 
 def get_center( contour ):
@@ -162,7 +119,7 @@ def label( image, text, center, label_offset, shadow_offset ):
     cv2.putText(image, f"{text}", (center[0]-offset, center[1]-offset),
                 cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 2 )
 
-print( f"After def. area_labels: {area_labels}")
+print( f"After def. area_labels: {o.area_labels}")
 
 # frame objects have an object id, a center and a 'seen' field.
 last_frame_objects = []
@@ -175,7 +132,7 @@ def track( contours ):
     global last_frame_objects
     for contour in contours:
         area = cv2.contourArea(contour)
-        if area > area_threshold:
+        if area > o.area_threshold:
             frame_object = {}
             frame_object["center"]=get_center(contour)
             frame_object["seen"]=False
@@ -202,32 +159,32 @@ def track( contours ):
 
 ret, frame = cap.read()
 
-while ret and current_frame <= end_frame:
-    if current_frame < start_frame:
+while ret and current_frame <= o.end_frame:
+    if current_frame < o.start_frame:
         current_frame += 1
         continue
 
-    throw_roi = frame[0 : throw_roi_bottom, throw_roi_left: throw_roi_right ]
+    throw_roi = frame[0 : o.throw_roi_bottom, throw_roi_left: throw_roi_right ]
     print( f"current_frame: {current_frame}")
-    if blur_radius is not None:
-        blur_diameter = blur_radius * 2 + 1
+    if o.blur_radius is not None:
+        blur_diameter = o.blur_radius * 2 + 1
         mask_input = cv2.GaussianBlur(throw_roi, (blur_diameter, blur_diameter), 0)
     else:
         mask_input = throw_roi
     mask = object_detector.apply(mask_input)
-    _, mask = cv2.threshold( mask, grey_threshold-1, grey_threshold,
+    _, mask = cv2.threshold( mask, o.grey_threshold-1, o.grey_threshold,
                                 cv2.THRESH_BINARY )
     contours, _ = cv2.findContours( mask,
                                     cv2.RETR_TREE,
                                     cv2.CHAIN_APPROX_SIMPLE )
-    if show_mask:
+    if o.show_mask:
         window_label = "Mask"
         image = mask
     else:
         window_label = "Frame"
         image = frame
 
-    if grid:
+    if o.grid:
         show_grid( image )
 
 
@@ -236,6 +193,7 @@ while ret and current_frame <= end_frame:
     for to in tracked_objects:
         # print(f"to: {to}")
         centers.append(to["center"])
+        cv2.circle(trails_mask, (to["center"][0], to["center"][1]), 2, (255, 255, 255), -1)
         if trails:
             cv2.drawContours(image, [to["contour"]], -1, (0, 255, 0), 2)
             for center in centers:
@@ -246,7 +204,7 @@ while ret and current_frame <= end_frame:
         oid=to["object_id"]
         print(f"to[object_id]: {oid} to[center] {to['center']}")
         object_labels( image, to["object_id"], to["center"], 0, 2)
-        if area_labels:
+        if o.area_labels:
             label( image, to["area"], to["center"], 20, 3 )
 
     out.write(image)
@@ -264,6 +222,14 @@ while ret and current_frame <= end_frame:
 
     ret, frame = cap.read()
     current_frame += 1
+
+
+if throw_mask is not None:
+    cv2.imwrite( throw_mask, trails_mask  )
+if left_hand_mask is not None:
+    cv2.imwrite( left_hand_mask, trails_mask  )
+if right_hand_mask is not None:
+    cv2.imwrite( right_hand_mask, trails_mask  )
 
 cap.release()
 out.release()
