@@ -78,6 +78,10 @@ object_detector = cv2.createBackgroundSubtractorMOG2(
 
 trails_mask = np.zeros( [height, width, 3], dtype = np.uint8 ) 
 
+## Trails image
+
+trails_write_mask = np.zeros( [height, width, 3], dtype = np.uint8 ) 
+
 print( f"size: {width}x{height}")
 print( f"video frame count: {frame_count}")
 print( f"options: {o}")
