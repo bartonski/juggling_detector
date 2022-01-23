@@ -19,7 +19,8 @@ print( f"o: {o}")
 # Default Values ---------------------------------------------------------------
 
 trails = not o.no_trails
-grid_color = ( 128, 128, 128 )
+trails_color = (    0,    0, 0xFF )
+grid_color =   ( 0x7F, 0x7F, 0x7F )
 grid_width = 2
 frame_delay = 1
 toggle = [1, 0]
@@ -73,12 +74,21 @@ object_detector = cv2.createBackgroundSubtractorMOG2(
                     varThreshold=o.detector_threshold)
 
 ## Trails image
+trails_mask = np.zeros( [height, width, 1], dtype = np.uint8 ) 
 
-trails_mask = np.zeros( [height, width, 3], dtype = np.uint8 ) 
+## Trail color input
+trails_color_image = np.zeros( [height, width, 3], dtype = np.uint8 ) 
+trails_color_image[:] = trails_color
+
+trails_image = np.zeros( [height, width, 3], dtype = np.uint8 ) 
 
 ## Trails image
+trails_write_mask = {
+    'throw': np.zeros( [height, width, 1], dtype = np.uint8 ),
+    'left_hand': np.zeros( [height, width, 1], dtype = np.uint8 ),
+    'right_hand': np.zeros( [height, width, 1], dtype = np.uint8 ) 
+}
 
-trails_write_mask = np.zeros( [height, width, 3], dtype = np.uint8 ) 
 
 print( f"size: {width}x{height}")
 print( f"video frame count: {frame_count}")
@@ -87,6 +97,24 @@ print( f"selection frame count: {o.end_frame-o.start_frame}")
 
 current_frame = 0
 centers = []
+
+# Read mask files --------------------------------------------------------------
+def open_read_mask_file( mask_file ):
+    read_mask = None
+    if mask_file is not None:
+        maskimg = cv2.imread( mask_file )
+        read_mask = cv2.cvtColor(maskimg, cv2.COLOR_RGB2GRAY)
+    else:
+        # if no read file is given, return white mask.
+        read_mask = np.zeros( [height, width, 1], dtype = np.uint8 )
+        read_mask[:] = 255
+    return read_mask
+
+read_masks = {
+    'throw':      open_read_mask_file(o.throw_read_mask),
+    'left_hand':  open_read_mask_file(o.left_hand_read_mask),
+    'right_hand': open_read_mask_file(o.right_hand_read_mask)
+}
 
 # Helper Functions for Video Read Loop -----------------------------------------
 
@@ -99,8 +127,8 @@ def show_grid( image ):
         cv2.line(image, ( x, 0), (x, height), grid_color, grid_width  )
 
 def get_center( contour ):
-                M = cv2.moments(contour)
-                return [ int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]) ]
+    M = cv2.moments(contour)
+    return [ int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]) ]
 
 # May want to center text, see
 # https://gist.github.com/xcsrz/8938a5d4a47976c745407fe2788c813a
@@ -122,11 +150,17 @@ def label( image, text, center, label_offset, shadow_offset ):
 
 print( f"After def. area_labels: {o.area_labels}")
 
+def read_mask_type( center, read_masks ):
+    for masktype in read_masks:
+        if read_masks[masktype][center[1]][center[0]] == 255:
+            return masktype
+    return None
+
 # frame objects have an object id, a center and a 'seen' field.
 last_frame_objects = []
 object_id=0
 tracking_threshold=20
-def track( contours ):
+def track( contours, read_masks ):
     #print( f"contours: {contours}")
     frame_objects = []
     global object_id
@@ -139,10 +173,12 @@ def track( contours ):
             frame_object["seen"]=False
             frame_object["contour"] = contour
             frame_object["area"] = area
+            frame_object["type"] = read_mask_type( frame_object["center"], read_masks )
             for lfo in last_frame_objects:
                 offset_x = frame_object["center"][0] - lfo["center"][0]
                 offset_y = frame_object["center"][1] - lfo["center"][1]
-                if math.hypot(offset_x, offset_y) <= tracking_threshold:
+                if ( math.hypot(offset_x, offset_y) <= tracking_threshold
+                     and frame_object["type"] is not None ):
                     frame_object["object_id"] = lfo["object_id"]
                     frame_object["seen"] = True
             #print( f"frame_object: {frame_object}")
@@ -188,22 +224,24 @@ while ret and current_frame <= o.end_frame:
     if o.grid:
         show_grid( image )
 
-    tracked_objects=track(contours)
+    tracked_objects=track(contours, read_masks )
     #print(f"tracked_objects: {tracked_objects}")
     for to in tracked_objects:
         # print(f"to: {to}")
         centers.append(to["center"])
-        cv2.circle(trails_mask, (to["center"][0], to["center"][1]), 2, (255, 255, 255), -1)
+        c = to['center']
+        cv2.circle(trails_mask, (c[0], c[1]), 2, (255), -1)
+        t = to['type']
+        if t is not None:
+            cv2.circle(trails_write_mask[t], (c[0], c[1]), 2, (255), -1)
+
         if trails:
-            cv2.drawContours(image, [to["contour"]], -1, (0, 255, 0), 2)
-            for center in centers:
-                red   = 0xFF
-                color = ( 0, 0, red )
-                cv2.circle(image, (center[0], center[1]), 2, color, -1)
+            trails_image = cv2.bitwise_and(trails_color_image, trails_color_image, mask=trails_mask)
+            image = cv2.bitwise_or(image, trails_image)
         cv2.drawContours(image, [to["contour"]], -1, (0, 255, 0), 2)
         oid=to["object_id"]
         print(f"to[object_id]: {oid} to[center] {to['center']}")
-        object_labels( image, to["object_id"], to["center"], 0, 2)
+        object_labels( image, f"{to['object_id']} {to['type']}", to["center"], 0, 2)
         if o.area_labels:
             label( image, to["area"], to["center"], 20, 3 )
 
@@ -225,11 +263,11 @@ while ret and current_frame <= o.end_frame:
 
 
 if throw_mask is not None:
-    cv2.imwrite( throw_mask, trails_mask  )
+    cv2.imwrite( throw_mask, trails_write_mask['throw'] )
 if left_hand_mask is not None:
-    cv2.imwrite( left_hand_mask, trails_mask  )
+    cv2.imwrite( left_hand_mask, trails_write_mask['left_hand'] )
 if right_hand_mask is not None:
-    cv2.imwrite( right_hand_mask, trails_mask  )
+    cv2.imwrite( right_hand_mask, trails_write_mask['right_hand'] )
 
 cap.release()
 out.release()

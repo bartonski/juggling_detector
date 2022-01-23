@@ -103,3 +103,17 @@ parser.add_argument(
     help='Input video file'
 )
 
+parser.add_argument(
+    '--throw_read_mask', type=str, metavar='THROW MASK INPUT FILE',
+    help='Png file where locations of throw objects are colored white'
+)
+
+parser.add_argument(
+    '--left_hand_read_mask', type=str, metavar='LEFT HAND MASK INPUT FILE',
+    help='Png file where locations of left hand objects are colored white'
+)
+
+parser.add_argument(
+    '--right_hand_read_mask', type=str, metavar='RIGHT HAND MASK INPUT FILE',
+    help='Png file where locations of right hand objects are colored white'
+)
