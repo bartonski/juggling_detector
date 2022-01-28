@@ -103,14 +103,32 @@ Track and display objects in `3_balls.mp4` between frames 100 and 1500, write ou
 * `--throw_roi_bottom` is the bottom edge of the 'Region of Interest' for throws and catches. It is the number of pixels from the top of the picture down to the lowest point where the props appear after having left the hand. Try to set this *above* the trails of the hands. This will keep the hands from being tracked as props.
 * Use the `--grid` option to display horizontal and vertical lines every 100 pixels, to help determine the correct value of `--throw_roi_bottom`. You can use `--grid_spacing` to adjust the number of pixels between lines.
 
-## Prerequisites
+## Installation
 
-Requires Python3 and the cv2 library. Running under Ubuntu, you should be able to run
+Click the green **Code** button above, then click **Download Zip**. This will put the file `juggling_detector-main.zip` in your Downloads folder.
 
+### Ubuntu
+
+(This may work for Debian and other debian based distributions; I haven't tested it)
+
+Open a terminal and run
+
+    unzip ~/Downloads/juggling_detector-main.zip 
     sudo apt install python3
     sudo apt install pip3
     sudo apt install build-essential
     pip3 install opencv-python
+
+To test, run
+
+    cd ~/juggling_detector-main/
+    python3 juggling_detector.py [YOUR VIDEO FILE]
+
+### Windows 10/Windows 11
+
+TODO: Finish installation instructions for Windows
+
+* Download python -- scroll to the bottom of the [Download page](https://www.python.org/downloads/release/python-3102/) and choose 'Windows installer (64 bit)'.
 
 A google search for 'python install cv2 windows 10', 'python install cv2 OSX', etc should give you instruction on installing the cv2 libraries.
 
