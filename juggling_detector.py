@@ -159,9 +159,9 @@ def read_mask_type( center, read_masks ):
 # frame objects have an object id, a center and a 'seen' field.
 last_frame_objects = []
 object_id=0
-tracking_threshold=20
+tracking_threshold=o.tracking_threshold
 def track( contours, read_masks ):
-    #print( f"contours: {contours}")
+    print( f"contours: {contours}")
     frame_objects = []
     global object_id
     global last_frame_objects
@@ -198,6 +198,7 @@ ret, frame = cap.read()
 
 while ret and current_frame <= o.end_frame:
     if current_frame < o.start_frame:
+        ret, frame = cap.read()
         current_frame += 1
         continue
 
@@ -225,7 +226,7 @@ while ret and current_frame <= o.end_frame:
         show_grid( image )
 
     tracked_objects=track(contours, read_masks )
-    #print(f"tracked_objects: {tracked_objects}")
+    print(f"tracked_objects: {tracked_objects}")
     for to in tracked_objects:
         # print(f"to: {to}")
         centers.append(to["center"])

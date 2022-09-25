@@ -56,6 +56,8 @@ A program to detect and track the paths of hands, and props thrown in a juggling
       --detector_history DETECTOR HISTORY
                             Number of frames available for the object detector to
                             look backward during object detection.
+      --tracking_threshold TRACKING THRESHOLD
+                            Distance in pixels for objects to be tracked from frame to frame
       --detector_threshold DETECTOR THRESHOLD
                             Adjust the sensitivity of the object detector
       --write_throw_mask    Write throw trails mask to png file.

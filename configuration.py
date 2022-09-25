@@ -79,6 +79,11 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    '--tracking_threshold', type=int, metavar='TRACKING THRESHOLD', default=20,
+    help='Distance in pixels for objects to be tracked from frame to frame'
+)
+
+parser.add_argument(
     '--detector_threshold', type=int, metavar='DETECTOR THRESHOLD', default=40,
     help='Adjust the sensitivity of the object detector'
 )
