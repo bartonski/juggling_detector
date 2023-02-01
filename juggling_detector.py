@@ -24,6 +24,7 @@ grid_color =   ( 0x7F, 0x7F, 0x7F )
 grid_width = 2
 frame_delay = 1
 toggle = [1, 0]
+discard_mask = None
 throw_mask = None
 left_hand_mask = None
 right_hand_mask = None
@@ -58,6 +59,8 @@ out = cv2.VideoWriter(
 
 ## Mask files
 
+if o.write_discard_mask is not None:
+    discard_mask = f"{basename}.discard_mask.png"
 if o.write_throw_mask is not None:
     throw_mask = f"{basename}.throw_mask.png"
 if o.write_left_hand_mask is not None:
@@ -84,6 +87,7 @@ trails_image = np.zeros( [height, width, 3], dtype = np.uint8 )
 
 ## Trails image
 trails_write_mask = {
+    'discard': np.zeros( [height, width, 1], dtype = np.uint8 ),
     'throw': np.zeros( [height, width, 1], dtype = np.uint8 ),
     'left_hand': np.zeros( [height, width, 1], dtype = np.uint8 ),
     'right_hand': np.zeros( [height, width, 1], dtype = np.uint8 ) 
@@ -111,6 +115,7 @@ def open_read_mask_file( mask_file ):
     return read_mask
 
 read_masks = {
+    'discard':    open_read_mask_file(o.discard_read_mask),
     'throw':      open_read_mask_file(o.throw_read_mask),
     'left_hand':  open_read_mask_file(o.left_hand_read_mask),
     'right_hand': open_read_mask_file(o.right_hand_read_mask)
@@ -178,9 +183,12 @@ def track( contours, read_masks ):
                 offset_x = frame_object["center"][0] - lfo["center"][0]
                 offset_y = frame_object["center"][1] - lfo["center"][1]
                 if ( math.hypot(offset_x, offset_y) <= tracking_threshold
-                     and frame_object["type"] is not None ):
+                     and frame_object["type"] is not None
+                     and frame_object["type"] != "discard" ):
                     frame_object["object_id"] = lfo["object_id"]
                     frame_object["seen"] = True
+                    cv2.circle(image, lfo["center"], tracking_threshold, (0, 255, 255), 2)
+                    cv2.line(image, lfo["center"], frame_object["center"], (0, 255, 255), 4)
             #print( f"frame_object: {frame_object}")
             frame_objects.append(frame_object)
     new_frame_objects = []
@@ -188,11 +196,18 @@ def track( contours, read_masks ):
         if fo["seen"] == False:
             object_id += 1
             fo["object_id"] = object_id
+            cv2.circle(image, fo["center"], tracking_threshold, (0, 0, 255), 2)
+        else:
+            cv2.circle(image, fo["center"], tracking_threshold, (255), 2)
         new_frame_objects.append(fo)
     last_frame_objects = new_frame_objects.copy()
     #print( object_id )
     return new_frame_objects
 # Video Read Loop --------------------------------------------------------------
+
+# TODO: use `cap.set(cv2.CV_CAP_PROP_POS_FRAMES,start_frame-1)`
+# to set video at start_frame. If this is done, also need to set
+# current_frame to start_frame.
 
 ret, frame = cap.read()
 
@@ -246,6 +261,8 @@ while ret and current_frame <= o.end_frame:
         if o.area_labels:
             label( image, to["area"], to["center"], 20, 3 )
 
+# Add frame number, time
+
     out.write(image)
     cv2.namedWindow(window_label, cv2.WINDOW_NORMAL) # Create a named window
     cv2.moveWindow(window_label, 40,30)              # Move it to (40,30)
@@ -263,6 +280,8 @@ while ret and current_frame <= o.end_frame:
     current_frame += 1
 
 
+if discard_mask is not None:
+    cv2.imwrite( discard_mask, trails_write_mask['discard'] )
 if throw_mask is not None:
     cv2.imwrite( throw_mask, trails_write_mask['throw'] )
 if left_hand_mask is not None:

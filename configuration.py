@@ -89,6 +89,11 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    '--write_discard_mask', action="store_true",
+    help='Write discard mask to png file.'
+)
+
+parser.add_argument(
     '--write_throw_mask', action="store_true",
     help='Write throw trails mask to png file.'
 )
@@ -106,6 +111,11 @@ parser.add_argument(
 parser.add_argument(
     'VIDEO FILE', type=str,
     help='Input video file'
+)
+
+parser.add_argument(
+    '--discard_read_mask', type=str, metavar='DISCARD MASK INPUT FILE',
+    help='Png file where locations of objects to ignore are colored white'
 )
 
 parser.add_argument(
