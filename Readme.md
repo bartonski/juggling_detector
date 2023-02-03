@@ -77,7 +77,22 @@ A program to detect and track the paths of hands, and props thrown in a juggling
 
 ## Understanding the object detector
 
-The juggling detector works by comparing video frames in succession. Areas that stay the same are ignored. For each frame, difference are written to a grey scale image called the 'mask'. Contiguous areas that have a pixel count larger than `--area_threshold` counted as 'things' by the detector. The value of `--detector_threshold` can be tweaked to make the detector more or less sensitive (lowering the threshold makes the detector more sensitive, which means more objects will be detected, but increases the chances of a false positive). The `--grey_threshold` is the minimum grey value that an area must have to be counted as part of the area used by `--area_threshold`. `--grey_threshold` may be between 0 (black) to 255 (Only count areas on the mask that are entirely white). If `--blur_radius` is specified, video frames are blurred before object detection occurs. This may or may not help with detection. The higher the value of `--blur_radius`, the more the input frames are blurred. Blurred images will probably show as shades of gray, so `--grey_threshold` may need to be lowered.
+The juggling detector works by comparing video frames in succession. Areas
+that stay the same are ignored. For each frame, difference are written
+to a grey scale image called the 'mask'. Contiguous areas that have a
+pixel count larger than `--area_threshold` counted as 'things' by the
+detector. The value of `--detector_threshold` can be tweaked to make
+the detector more or less sensitive (lowering the threshold makes the
+detector more sensitive, which means more objects will be detected,
+but increases the chances of a false positive). The `--grey_threshold`
+is the minimum grey value that an area must have to be counted as part of
+the area used by `--area_threshold`. `--grey_threshold` may be between 0
+(black) to 255 (Only count areas on the mask that are entirely white). If
+`--blur_radius` is specified, video frames are blurred before object
+detection occurs. This may or may not help with detection. The higher the
+value of `--blur_radius`, the more the input frames are blurred. Blurred
+images will probably show as shades of gray, so `--grey_threshold`
+may need to be lowered.
 
 See Tips for getting good object detection.
 
@@ -130,7 +145,7 @@ To test, run
 
 TODO: Finish installation instructions for Windows
 
-* Download python -- scroll to the bottom of the [Download page](https://www.python.org/downloads/release/python-3102/) and choose 'Windows installer (64 bit)'.
+* Download python -- Find **Download Windows installer (64-bit)** under Stable Releases on [Python Releases for Windows](https://www.python.org/downloads/windows/). Download and run the installer.
 
 A google search for 'python install cv2 windows 10', 'python install cv2 OSX', etc should give you instruction on installing the cv2 libraries.
 
