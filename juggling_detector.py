@@ -52,6 +52,7 @@ basename, extension = result.groups()
 label="detector"
 output_file=f"{basename}.{label}.{extension}"
 
+## TODO: output frame rate should not be hard coded
 out = cv2.VideoWriter(
         output_file, cv2.VideoWriter_fourcc('m','p','4','v'),
         frame_rate/2, (width, height)
@@ -162,9 +163,16 @@ def read_mask_type( center, read_masks ):
     return None
 
 # frame objects have an object id, a center and a 'seen' field.
+# if the frame object is seen, it is assigned velocity_x and velocity_y
+# if the last_frame_object was seen, it has velocity_x and velocity_y, so
+# we can calculate acceleration_x and acceleration_y
+# if acceleration_y is g (i.e. the acceleration of gravity), and
+# acceleration_x is 0, the object is in ballistic flight.
+
 last_frame_objects = []
 object_id=0
 tracking_threshold=o.tracking_threshold
+
 def track( contours, read_masks ):
     print( f"contours: {contours}")
     frame_objects = []
@@ -187,7 +195,15 @@ def track( contours, read_masks ):
                      and frame_object["type"] != "discard" ):
                     frame_object["object_id"] = lfo["object_id"]
                     frame_object["seen"] = True
+                    frame_object["velocity_x"] = offset_x
+                    frame_object["velocity_y"] = offset_y
+                    if lfo["seen"] == True:
+                        frame_object["acceleration_x"] =
+                            frame_object["velocity_x"] - lfo["velocity_x"]
+                        frame_object["acceleration_y"] =
+                            frame_object["velocity_y"] - lfo["velocity_y"]
                     cv2.circle(image, lfo["center"], tracking_threshold, (0, 255, 255), 2)
+                    # Draw sparks
                     cv2.line(image, lfo["center"], frame_object["center"], (0, 255, 255), 4)
             #print( f"frame_object: {frame_object}")
             frame_objects.append(frame_object)
@@ -203,6 +219,7 @@ def track( contours, read_masks ):
     last_frame_objects = new_frame_objects.copy()
     #print( object_id )
     return new_frame_objects
+
 # Video Read Loop --------------------------------------------------------------
 
 # TODO: use `cap.set(cv2.CV_CAP_PROP_POS_FRAMES,start_frame-1)`
@@ -252,12 +269,15 @@ while ret and current_frame <= o.end_frame:
             cv2.circle(trails_write_mask[t], (c[0], c[1]), 2, (255), -1)
 
         if trails:
-            trails_image = cv2.bitwise_and(trails_color_image, trails_color_image, mask=trails_mask)
+            trails_image = cv2.bitwise_and(
+                              trails_color_image, trails_color_image,
+                              mask=trails_mask )
             image = cv2.bitwise_or(image, trails_image)
         cv2.drawContours(image, [to["contour"]], -1, (0, 255, 0), 2)
         oid=to["object_id"]
         print(f"to[object_id]: {oid} to[center] {to['center']}")
-        object_labels( image, f"{to['object_id']} {to['type']}", to["center"], 0, 2)
+        object_labels( image, f"{to['object_id']} {to['type']}",
+                       to["center"], 0, 2)
         if o.area_labels:
             label( image, to["area"], to["center"], 20, 3 )
 
