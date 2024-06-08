@@ -122,6 +122,11 @@ read_masks = {
     'right_hand': open_read_mask_file(o.right_hand_read_mask)
 }
 
+traveler_id = {}
+
+for key in read_masks.keys():
+    traveler_id[key] = 0
+
 # Helper Functions for Video Read Loop -----------------------------------------
 
 def show_grid( image ):
@@ -176,7 +181,7 @@ tracking_threshold=o.tracking_threshold
 def track( contours, read_masks ):
     print( f"contours: {contours}")
     frame_objects = []
-    global object_id
+    global traveler_id
     global last_frame_objects
     for contour in contours:
         area = cv2.contourArea(contour)
@@ -191,6 +196,7 @@ def track( contours, read_masks ):
                 offset_x = frame_object["center"][0] - lfo["center"][0]
                 offset_y = frame_object["center"][1] - lfo["center"][1]
                 if ( math.hypot(offset_x, offset_y) <= tracking_threshold
+                     and frame_object["type"] == lfo["type"] 
                      and frame_object["type"] is not None
                      and frame_object["type"] != "discard" ):
                     frame_object["object_id"] = lfo["object_id"]
@@ -198,10 +204,20 @@ def track( contours, read_masks ):
                     frame_object["velocity_x"] = offset_x
                     frame_object["velocity_y"] = offset_y
                     if lfo["seen"] == True:
-                        frame_object["acceleration_x"] =
+                        frame_object["acceleration_x"] = \
                             frame_object["velocity_x"] - lfo["velocity_x"]
-                        frame_object["acceleration_y"] =
+                        frame_object["acceleration_y"] = \
                             frame_object["velocity_y"] - lfo["velocity_y"]
+                        print( f"id,{frame_object['object_id']}",
+                               f"type,{frame_object['type']}",
+                               f"x,{frame_object['center'][0]: 3d}",
+                               f"y,{frame_object['center'][1]: 3d}",
+                               f"v_x,{frame_object['velocity_x']: 3d}",
+                               f"v_y,{frame_object['velocity_y']: 3d}",
+                               f"a_x,{frame_object['acceleration_x']: 3d}",
+                               f"a_y,{frame_object['acceleration_y']: 3d}",
+                               sep=','
+                             )
                     cv2.circle(image, lfo["center"], tracking_threshold, (0, 255, 255), 2)
                     # Draw sparks
                     cv2.line(image, lfo["center"], frame_object["center"], (0, 255, 255), 4)
@@ -210,8 +226,9 @@ def track( contours, read_masks ):
     new_frame_objects = []
     for fo in frame_objects:
         if fo["seen"] == False:
-            object_id += 1
-            fo["object_id"] = object_id
+            traveler_id[frame_object["type"]] += 1
+            # object_id += 1
+            fo["object_id"] = traveler_id[frame_object["type"]]
             cv2.circle(image, fo["center"], tracking_threshold, (0, 0, 255), 2)
         else:
             cv2.circle(image, fo["center"], tracking_threshold, (255), 2)
@@ -250,6 +267,7 @@ while ret and current_frame <= o.end_frame:
     if o.show_mask:
         window_label = "Mask"
         image = mask
+        trails=False
     else:
         window_label = "Frame"
         image = frame
