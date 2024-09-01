@@ -5,10 +5,10 @@ venv_name="${venv_tag}_venv"
 echo "Setting up virtual environment ($venv_name)" 1>&2
 python -m venv "$venv_name"
 echo "Activating ($venv_name)" 1>&2
-source ./$venv_name/bin/activate
+. ./$venv_name/bin/activate
 if [[ -e "$REQUIREMENTS" ]]; then
     echo "Installing modules in $REQUIREMENTS" 1>&2
-    pip install -r $REQUIREMENTS
+    pip install -r "$REQUIREMENTS"
 fi
 echo "Deactivating ($venv_name)" 1>&2
 deactivate
